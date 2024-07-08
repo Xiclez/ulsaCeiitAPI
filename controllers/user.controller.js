@@ -41,7 +41,7 @@ async function buscarUsuario(req, res) {
 
 // Registrar usuario
 async function registrarUsuario(req, res) {
-  const { usrn, password, tuition, name, surName, role } = req.body;
+  const { usrn, password, tuition, name, surName, role = 'Usuario'} = req.body;
 
   try {
     const salt = await bcrypt.genSalt(10);
