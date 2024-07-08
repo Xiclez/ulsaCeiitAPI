@@ -1,3 +1,4 @@
+//What is this even doing here?
 const Loan = require("../models/loan.models.js").Loan;
 
 async function loanObject(req, res){
