@@ -19,6 +19,18 @@ const logAction = async (logData) => {
     }
 };
 
+// Function to get all logs
+const getAllLogs = async (req, res) => {
+    try {
+        const logs = await Log.find();
+        res.json(logs);
+    } catch (error) {
+        console.error('Error fetching logs:', error);
+        res.status(500).json({ error: 'An error occurred while fetching logs' });
+    }
+};
+
 module.exports = {
     logAction,
+    getAllLogs,
 };
