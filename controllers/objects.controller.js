@@ -35,22 +35,10 @@ async function addObject(req, res) {
 }
 
 async function getAllObjects(req, res) {
-    if (!req.user || !req.user.username) {
-        return res.status(401).send('User not authenticated');
-    }
-
     const user = req.user.username;
 
     try {
         const objects = await Ceiit.find();
-
-        await logAction({
-            user: user,
-            action: 'read',
-            element: 'all objects',
-            date: new Date()
-        });
-
         res.json({ objs: objects });
     } catch (err) {
         console.log(err);

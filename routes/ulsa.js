@@ -31,7 +31,7 @@ const { logAction } = require('../controllers/log.controller.js');
   router.post('/loanReadObject',loanReadObject);
   router.post('/loanDeleteObject',loanDeleteObject);
 
-  router.get('/getAllObjects',getAllObjects);
+  router.get('/getAllObjects',verifyJwt,getAllObjects);
   router.put('/updateObject',verifyJwt, updateObject);
   router.put('/loanUpdateObject', loanUpdateObject);
   router.get('/getAllLoans',verifyJwt,getAllLoans);
