@@ -11,6 +11,7 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var ulsaRouter = require('./routes/ulsa');
 const authRouter = require('./routes/auth')
+const devRouter = require('./routes/dev')
 
 // info db
 const databaseURL = "mongodb+srv://ibarraorvil:Sooth0212@cluster0.dh71ixn.mongodb.net/ulsa"
@@ -38,6 +39,7 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/ulsa', ulsaRouter);
 app.use('/auth',authRouter);
+app.use('/dev',devRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

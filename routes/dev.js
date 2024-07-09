@@ -6,3 +6,8 @@ const { getAllLogs, logAction } = require('../controllers/log.controller.js');
 
 
 router.get('/getAllLogs', verifyJwt, getAllLogs);
+
+module.exports = router;
+
+
+
