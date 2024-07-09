@@ -3,7 +3,7 @@ const User = require("../models/user.models").User;
 const jwt = require('jsonwebtoken');
 const { config } = require('../config/config');
 const { firmaJwt } = require('./auth.controller');
-const { logAction } = require('../controllers/log.controller');
+const { logAction } = require('./log.controller');
 
 // Buscar usuario
 async function buscarUsuario(req, res) {
@@ -41,7 +41,7 @@ async function buscarUsuario(req, res) {
 
 // Registrar usuario
 async function registrarUsuario(req, res) {
-  const { usrn, password, tuition, name, surName, role = 'Usuario'} = req.body;
+  const { usrn, password, tuition, name, surName, role} = req.body;
 
   try {
     const salt = await bcrypt.genSalt(10);
