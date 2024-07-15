@@ -7,29 +7,27 @@ async function getLoanByObjectId(req, res) {
     const { id } = req.query;
 
     try {
-        const loan = await Loan.findOne({ nameObj: id });
+        // Buscar todos los préstamos que coincidan con nameObj
+        const loans = await Loan.find({ nameObj: id });
 
-        if (!loan) {
-            await logAction({
-                user: req.user ? req.user.username : 'anonymous',
-                action: 'search',
-                element: `loan:${id}`,
-                date: new Date()
-            });
-            return res.status(404).json({ mensaje: "Préstamo no encontrado" });
-        }
-
+        // Registrar la acción independientemente del resultado
         await logAction({
             user: req.user ? req.user.username : 'anonymous',
             action: 'search',
-            element: `loan:${loan._id}`,
+            element: `loan:${id}`,
             date: new Date()
         });
 
-        res.json(loan);
+        // Si no se encuentran préstamos, retornar un mensaje 404
+        if (loans.length === 0) {
+            return res.status(404).json({ mensaje: "Préstamos no encontrados" });
+        }
+
+        // Retornar los préstamos encontrados
+        res.json(loans);
     } catch (err) {
         console.log(err);
-        res.status(500).json({ mensaje: "Hubo un error al buscar el préstamo" });
+        res.status(500).json({ mensaje: "Hubo un error al buscar los préstamos" });
     }
 }
 
