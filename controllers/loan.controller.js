@@ -202,6 +202,7 @@ async function loanDeleteObject(req, res) {
     }
 }
 
+
 async function loanReadObject(req, res) {
     const { loanId } = req.body;
 
