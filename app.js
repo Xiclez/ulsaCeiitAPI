@@ -39,7 +39,7 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/ulsa', ulsaRouter);
 app.use('/auth',authRouter);
-app.use('/dev',devRouter);
+app.use('/dev',devRouter);``
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

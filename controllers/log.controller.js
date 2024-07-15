@@ -13,7 +13,7 @@ const logAction = async (logData) => {
 
     try {
         await logEntry.save();
-        console.log('Log recorded successfully'); // Log success message
+        console.log('Log recorded successfully'); 
     } catch (error) {
         console.error('Error writing log:', error);
     }

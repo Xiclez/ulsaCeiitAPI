@@ -4,10 +4,9 @@ const jwt = require('jsonwebtoken');
 const { config } = require('../config/config');
 const { firmaJwt } = require('./auth.controller');
 const { logAction } = require('./log.controller');
-
 // Buscar usuario
 async function buscarUsuario(req, res) {
-  const { name, tuition, surName } = req.query;
+  const { name, tuition, surName, id } = req.query;
 
   try {
     let query = {};
@@ -20,6 +19,9 @@ async function buscarUsuario(req, res) {
     }
     if (surName) {
       query.surName = { $regex: new RegExp(surName, "i") };
+    }
+    if (id) {
+      query._id = id;
     }
 
     const usuarios = await User.find(query);
