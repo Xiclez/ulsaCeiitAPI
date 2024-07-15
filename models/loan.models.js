@@ -24,7 +24,7 @@ const loanSchema = new mongoose.Schema({
     },
     status: {
         type: Boolean,
-        default: true, // Se establece en true por defecto
+        default: true, 
         require: true
     },
     linkOpenLoan: {
@@ -32,6 +32,10 @@ const loanSchema = new mongoose.Schema({
     },
     linkCloseLoan: {
         type: String
+    },
+    observaciones: {
+        type: String,
+        default: 'Sin observaciones'
     }
 });
 
