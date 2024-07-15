@@ -7,7 +7,7 @@ async function getLoanByObjectId(req, res) {
     const { id } = req.query;
 
     try {
-        const loan = await Loan.findOne({ nameObj: id, status: true });
+        const loan = await Loan.findOne({ nameObj: id });
 
         if (!loan) {
             await logAction({
