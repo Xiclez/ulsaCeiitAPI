@@ -22,7 +22,7 @@ async function firmaJwt(req, res) {
     }
 }
 
-async function verifyJwt(req, res, next) {
+async function verifyJwt(req, res) {
     const headerToken = req.headers.authorization;
 
     console.log("Authorization header:", headerToken); // Log authorization header
@@ -34,8 +34,7 @@ async function verifyJwt(req, res, next) {
             try {
                 const decoded = await jwt.verify(authToken, config.auth.secretKey);
                 console.log("Decoded token:", decoded); // Log decoded token
-                req.user = decoded; // Attach decoded token (user information) to request object
-                next();
+                return res.status(200).json({ message: "Token válido", user: decoded });
             } catch (err) {
                 console.error("Token inválido:", err);
                 return res.status(401).json({ message: "Token inválido" });
