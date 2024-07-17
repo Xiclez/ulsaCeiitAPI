@@ -35,8 +35,6 @@ async function addObject(req, res) {
 }
 
 async function getAllObjects(req, res) {
-    const user = req.user.username;
-
     try {
         const objects = await Ceiit.find();
         res.json({ objs: objects });
