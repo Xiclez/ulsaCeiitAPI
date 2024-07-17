@@ -241,12 +241,6 @@ async function getAllLoans(req, res) {
     try {
         const loans = await Loan.find({});
         if (!loans) {
-            await logAction({
-                user: req.user ? req.user.username : 'anonymous',
-                action: 'read',
-                element: 'all loans',
-                date: new Date()
-            });
             return res.status(404).json({ mensaje: "No se encontraron préstamos" });
         } else {
             await logAction({
@@ -257,6 +251,7 @@ async function getAllLoans(req, res) {
             });
             res.json({ obj: loans });
         }
+        
     } catch (err) {
         console.log(err);
         res.status(500).json({ mensaje: "Hubo un error al obtener los préstamos" });
