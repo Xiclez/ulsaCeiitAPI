@@ -33,9 +33,11 @@ async function getLoanByObjectId(req, res) {
 
 async function returnObject(req, res) {
     const { loanId, linkCloseLoan } = req.body;
+    console.log("Request body:", req.body);
 
     try {
         const loan = await Loan.findById(loanId);
+        console.log("Loan found:", loan);
 
         if (!loan) {
             await logAction({
@@ -61,10 +63,14 @@ async function returnObject(req, res) {
         loan.returnDate = Date.now();
         loan.linkCloseLoan = linkCloseLoan;
         await loan.save();
+        console.log("Loan updated:", loan);
 
         const ceiitObject = await Ceiit.findById(loan.nameObj);
+        console.log("Ceiit object found:", ceiitObject);
+
         ceiitObject.isAvailable = true;
         await ceiitObject.save();
+        console.log("Ceiit object updated:", ceiitObject);
 
         await logAction({
             user: req.user ? req.user.username : 'anonymous',
@@ -75,16 +81,23 @@ async function returnObject(req, res) {
 
         res.json({ mensaje: "Préstamo devuelto correctamente", loan });
     } catch (err) {
-        console.log(err);
+        console.error("Error al devolver el préstamo:", err);
         res.status(500).json({ mensaje: "Hubo un error al devolver el préstamo" });
     }
 }
 
+
 async function loanObject(req, res) {
-    const { userId, ceiitId } = req.body;
+    const { userId, ceiitId, linkOpenLoan } = req.body;
+    console.log("Request body:", req.body);
+
+    if (!userId || !ceiitId || !linkOpenLoan) {
+        return res.status(400).json({ mensaje: "Faltan datos necesarios" });
+    }
 
     try {
         const ceiitObject = await Ceiit.findById(ceiitId);
+        console.log("Ceiit object found:", ceiitObject);
 
         if (!ceiitObject || !ceiitObject.isAvailable) {
             return res.status(400).json({ mensaje: "El objeto no está disponible" });
@@ -93,13 +106,16 @@ async function loanObject(req, res) {
         const newLoan = new Loan({
             nameUser: userId,
             nameObj: ceiitId,
-            date: Date.now()
+            date: Date.now(),
+            linkOpenLoan: linkOpenLoan
         });
 
         await newLoan.save();
+        console.log("New loan created:", newLoan);
 
         ceiitObject.isAvailable = false;
         await ceiitObject.save();
+        console.log("Ceiit object updated to unavailable");
 
         await logAction({
             user: req.user ? req.user.username : 'anonymous',
@@ -112,10 +128,11 @@ async function loanObject(req, res) {
             obj: newLoan
         });
     } catch (err) {
-        console.log(err);
+        console.error("Error al crear el préstamo:", err);
         res.status(500).json({ mensaje: "Hubo un error al crear el préstamo" });
     }
 }
+
 
 async function loanUpdateObject(req, res) {
     const { loanId, userId, ceiitId, linkOpenLoan, linkCloseLoan } = req.body;

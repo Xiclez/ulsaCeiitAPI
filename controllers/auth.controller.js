@@ -11,7 +11,7 @@ async function firmaJwt(req, res) {
         );
 
         res.status(200).json({
-            message: "Token creado",
+            message: "Login Correcto",
             jwt: nuevoToken
         });
     } catch (err) {
