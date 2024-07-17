@@ -11,7 +11,7 @@ async function firmaJwt(req, res) {
         );
 
         res.status(200).json({
-            message: "Token creado",
+            message: "Login Correcto",
             jwt: nuevoToken
         });
     } catch (err) {
@@ -24,20 +24,16 @@ async function firmaJwt(req, res) {
 
 async function verifyJwt(req, res, next) {
     const headerToken = req.headers.authorization;
-
-    console.log("Authorization header:", headerToken); // Log authorization header
-
+    
     if (headerToken) {
         const tokenParts = headerToken.split(' ');
-        if (tokenParts.length === 2 && tokenParts[0] === "Bearer") {
+        if(tokenParts.length == 2 && tokenParts[0] === "Bearer"){
             const authToken = tokenParts[1];
-            try {
-                const decoded = await jwt.verify(authToken, config.auth.secretKey);
-                console.log("Decoded token:", decoded); // Log decoded token
-                req.user = decoded; // Almacenar la información del usuario en el objeto req
-                return next(); // Llamar al siguiente middleware o ruta
-            } catch (err) {
-                console.error("Token inválido:", err);
+            try{
+                await jwt.verify(authToken, config.auth.secretKey);
+                next();
+            } catch(err){
+                console.error("INVALID TOKEN");
                 return res.status(401).json({ message: "Token inválido" });
             }
         } else {
