@@ -3,7 +3,12 @@ var router = express.Router();
 const { verifyJwt } = require('../controllers/auth.controller.js');
 
 const {
-    addObject,readObject,deleteObject,updateObject,getAllObjects
+    addObject,
+    readObject,
+    deleteObject,
+    updateObject,
+    getAllObjects,
+    getObjectQR
   } = require('../controllers/objects.controller.js');
 
 const  {
@@ -22,6 +27,7 @@ const {
 
 const { logAction } = require('../controllers/log.controller.js');
 
+  router.get('/getObjectQR',verifyJwt,getObjectQR);
   router.post('/addObject',verifyJwt,addObject);
   router.post('/readObject',verifyJwt,readObject);
   router.post('/deleteObject',verifyJwt,deleteObject);

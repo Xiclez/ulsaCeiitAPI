@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
 	type: String,
         enum: ['Administrador', 'Desarrollador', 'Usuario'], 
 	default: 'Usuario' 
+    },
+    codigoQR: {
+        type: String,
+        require: true
     }
 }, {collection:'user'});
 

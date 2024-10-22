@@ -1,10 +1,10 @@
 const bcrypt = require('bcrypt');
-const User = require("../models/user.models").User;
+const User = require("../models/user.model").User;
 const jwt = require('jsonwebtoken');
 const { config } = require('../config/config');
 const { firmaJwt } = require('./auth.controller');
-const { logAction } = require('./log.controller');
-// Buscar usuario
+
+// Buscar usuario por parámetros generales (nombre, matrícula, apellido, ID)
 async function buscarUsuario(req, res) {
   const { name, tuition, surName, id } = req.query;
 
@@ -24,15 +24,8 @@ async function buscarUsuario(req, res) {
       query._id = id;
     }
 
-    const usuarios = await User.find(query);
-
-    // Log the search action
-    await logAction({
-      user: req.user ? req.user.username : 'anonymous',
-      action: 'search',
-      element: 'user search',
-      date: new Date()
-    });
+    // Exclude password and role from the response
+    const usuarios = await User.find(query).select('-password -role');
 
     res.json({ usuarios });
   } catch (error) {
@@ -41,9 +34,28 @@ async function buscarUsuario(req, res) {
   }
 }
 
+// Buscar usuario por codigoQR
+async function buscarUsuarioPorQr(req, res) {
+  const { codigoQR } = req.query;
+
+  try {
+    // Exclude password and role from the response
+    const usuario = await User.findOne({ codigoQR }).select('-password -role');
+
+    if (!usuario) {
+      return res.status(404).json({ mensaje: "No se encontró el usuario con el código QR proporcionado" });
+    }
+
+    res.json({ usuario });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: "Hubo un error al buscar el usuario por código QR" });
+  }
+}
+
 // Registrar usuario
 async function registrarUsuario(req, res) {
-  const { usrn, password, tuition, name, surName, role} = req.body;
+  const { usrn, password, tuition, name, surName, role, codigoQR } = req.body;
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -55,21 +67,17 @@ async function registrarUsuario(req, res) {
       tuition,
       name,
       surName,
-      role
+      role,
+      codigoQR
     });
 
     await newUser.save();
 
-    // Log the registration action
-    await logAction({
-      user: req.user ? req.user.username : 'anonymous',
-      action: 'register',
-      element: `user:${newUser._id}:${newUser.username}`,
-      date: new Date()
-    });
+    // Exclude password and role from the response
+    const userWithoutSensitiveData = await User.findById(newUser._id).select('-password -role');
 
     res.json({
-      obj: newUser
+      obj: userWithoutSensitiveData
     });
   } catch (err) {
     console.error(err);
@@ -77,7 +85,7 @@ async function registrarUsuario(req, res) {
   }
 }
 
-// Iniciar sesión
+// Iniciar sesión (this doesn't need modifications for password/role exclusion as it doesn't return user details directly)
 async function iniciarSesion(req, res) {
   const { usrn, password } = req.body;
 
@@ -96,14 +104,6 @@ async function iniciarSesion(req, res) {
 
     req.body.username = usrn; 
     await firmaJwt(req, res);
-
-    // Log the login action
-    await logAction({
-      user: usrn,
-      action: 'login',
-      element: `user:${user._id}:${usrn}`,
-      date: new Date()
-    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ mensaje: "Hubo un error al iniciar sesión" });
@@ -113,5 +113,6 @@ async function iniciarSesion(req, res) {
 module.exports = {
   registrarUsuario,
   iniciarSesion,
-  buscarUsuario
+  buscarUsuario,
+  buscarUsuarioPorQr
 };

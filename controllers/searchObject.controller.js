@@ -1,6 +1,6 @@
 
-const Ceiit = require("../models/ceiit.models").Ceiit;
-const Loan = require("../models/loan.models.js").Loan;
+const Ceiit = require("../models/object.model.js").Ceiit;
+const Loan = require("../models/loan.model.js").Loan;
 
 async function searchObj(req, res) {
     const id = req.query.id;

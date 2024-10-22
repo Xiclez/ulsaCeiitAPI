@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const User = require("../models/user.models").User;
-const Ceiit = require("../models/ceiit.models").Ceiit;
+const User = require("./user.model").User;
+const Ceiit = require("./object.model").Ceiit;
 
 const loanSchema = new mongoose.Schema({
     nameUser: {
@@ -15,23 +15,21 @@ const loanSchema = new mongoose.Schema({
     },
     returnDate: {
         type: Date,
-        default: Date.now,
+        require: true
+    },
+    actualReturnDate: {
+        type: Date,
+        default: null
     },
     nameObj: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Ceiit',
+        ref: 'Objeto',
         require: true
     },
     status: {
         type: Boolean,
         default: true, 
         require: true
-    },
-    linkOpenLoan: {
-        type: String
-    },
-    linkCloseLoan: {
-        type: String
     },
     observaciones: {
         type: String,

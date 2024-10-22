@@ -1,31 +1,15 @@
-const Ceiit = require("../models/ceiit.models").Ceiit;
-const { logAction } = require("../controllers/log.controller");
+const Objeto = require("../models/object.model").Objeto; // Correct the import
 
 async function addObject(req, res) {
     const { ob, ubi, esta, imgURL } = req.body;
 
-    if (!req.user || !req.user.username) {
-        return res.status(401).send('User not authenticated');
-    }
-
-    const user = req.user.username;
-
     try {
-        const newObject = await new Ceiit({
+        const newObject = await new Objeto({ // Use Objeto here
             NOMBRE: ob,
             Lugar: ubi,
             isAvailable: esta,
             imgURL: imgURL
         }).save();
-
-        const logData = {
-            user: user,
-            action: 'add',
-            element: `object:${newObject._id}:${ob}`,
-            date: new Date()
-        };
-
-        await logAction(logData);
 
         res.json({ obj: newObject });
     } catch (err) {
@@ -36,7 +20,7 @@ async function addObject(req, res) {
 
 async function getAllObjects(req, res) {
     try {
-        const objects = await Ceiit.find();
+        const objects = await Objeto.find(); // Use Objeto here
         res.json({ objs: objects });
     } catch (err) {
         console.log(err);
@@ -47,25 +31,12 @@ async function getAllObjects(req, res) {
 async function updateObject(req, res) {
     const { id, ubi } = req.body;
 
-    if (!req.user || !req.user.username) {
-        return res.status(401).send('User not authenticated');
-    }
-
-    const user = req.user.username;
-
     try {
-        const updateOb = await Ceiit.findByIdAndUpdate(id, { Lugar: ubi }, { new: true });
+        const updateOb = await Objeto.findByIdAndUpdate(id, { Lugar: ubi }, { new: true }); // Use Objeto here
 
         if (!updateOb) {
             return res.status(404).json({ mensaje: "No se encontró el objeto" });
         }
-
-        await logAction({
-            user: user,
-            action: 'update',
-            element: `object:${updateOb._id}:${updateOb.NOMBRE}`,
-            date: new Date()
-        });
 
         res.json({ obj: updateOb });
     } catch (err) {
@@ -77,26 +48,13 @@ async function updateObject(req, res) {
 async function deleteObject(req, res) {
     const { id } = req.body;
 
-    if (!req.user || !req.user.username) {
-        return res.status(401).send('User not authenticated');
-    }
-
-    const user = req.user.username;
-
     try {
-        const deleteO = await Ceiit.findByIdAndDelete(id);
+        const deleteO = await Objeto.findByIdAndDelete(id); // Use Objeto here
 
         if (!deleteO) {
-            res.status(401).json({ mensaje: "No se encontró el objeto" });
+            res.status(404).json({ mensaje: "No se encontró el objeto" });
             return;
         }
-
-        await logAction({
-            user: user,
-            action: 'delete',
-            element: `object:${deleteO._id}:${deleteO.NOMBRE}`,
-            date: new Date()
-        });
 
         res.json({ obj: deleteO });
     } catch (err) {
@@ -108,26 +66,30 @@ async function deleteObject(req, res) {
 async function readObject(req, res) {
     const { id } = req.body;
 
-    if (!req.user || !req.user.username) {
-        return res.status(401).send('User not authenticated');
-    }
-
-    const user = req.user.username;
-
     try {
-        const object = await Ceiit.findById(id);
+        const object = await Objeto.findById(id); // Use Objeto here
 
         if (!object) {
-            res.status(401).json({ mensaje: "No se encontró el objeto" });
+            res.status(404).json({ mensaje: "No se encontró el objeto" });
             return;
         }
 
-        await logAction({
-            user: user,
-            action: 'read',
-            element: `object:${object._id}:${object.NOMBRE}`,
-            date: new Date()
-        });
+        res.json({ obj: object });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ mensaje: "Hubo un error al buscar el objeto" });
+    }
+}
+
+async function getObjectQR(req, res) {
+    const { codigoQR } = req.query;
+
+    try {
+        const object = await Objeto.findOne({ codigoQR: codigoQR }); 
+
+        if (!object) {
+            return res.status(404).json({ mensaje: "No se encontró el objeto con el código QR proporcionado" });
+        }
 
         res.json({ obj: object });
     } catch (err) {
@@ -141,5 +103,6 @@ module.exports = {
     readObject,
     deleteObject,
     updateObject,
-    getAllObjects
+    getAllObjects,
+    getObjectQR
 };

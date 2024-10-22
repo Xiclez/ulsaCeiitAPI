@@ -29,11 +29,16 @@ async function verifyJwt(req, res, next) {
         const tokenParts = headerToken.split(' ');
         if(tokenParts.length == 2 && tokenParts[0] === "Bearer"){
             const authToken = tokenParts[1];
-            try{
-                await jwt.verify(authToken, config.auth.secretKey);
+            try {
+                // Verify and decode the token
+                const decodedToken = await jwt.verify(authToken, config.auth.secretKey);
+
+                // Attach the decoded token (username) to req.user
+                req.user = { username: decodedToken.username };
+
                 next();
-            } catch(err){
-                console.error("INVALID TOKEN");
+            } catch(err) {
+                console.error("INVALID TOKEN:", err);
                 return res.status(401).json({ message: "Token inválido" });
             }
         } else {
@@ -43,6 +48,7 @@ async function verifyJwt(req, res, next) {
         return res.status(401).json({ message: "Usuario no autentificado" });
     }
 }
+
 
 module.exports = {
     firmaJwt,

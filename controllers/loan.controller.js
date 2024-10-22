@@ -1,83 +1,94 @@
-const Loan = require("../models/loan.models").Loan;
-const User = require("../models/user.models").User;
-const Ceiit = require("../models/ceiit.models").Ceiit;
-const { logAction } = require('../controllers/log.controller');
+const Loan = require("../models/loan.model").Loan;
+const User = require("../models/user.model").User;
+const Objeto = require("../models/object.model").Objeto;
 
-async function getLoanByObjectId(req, res) {
-    const { id } = req.query;
+// Open a Loan
+async function loanObject(req, res) {
+    const { userId, objectId, returnDate } = req.body;
+
+    if (!userId || !objectId || !returnDate) {
+        console.log("Faltan datos necesarios en la solicitud:", req.body);
+        return res.status(400).json({ mensaje: "Faltan datos necesarios" });
+    }
 
     try {
-        // Buscar todos los préstamos que coincidan con nameObj
-        const loans = await Loan.find({ nameObj: id });
+        // Fetch the object using the object ID
+        const objeto = await Objeto.findById(objectId);
+        console.log("Objeto encontrado:", objeto);  // Log the object fetched
 
-        // Registrar la acción independientemente del resultado
-        await logAction({
-            user: req.user ? req.user.username : 'anonymous',
-            action: 'search',
-            element: `loan:${id}`,
-            date: new Date()
-        });
-
-        // Si no se encuentran préstamos, retornar un mensaje 404
-        if (loans.length === 0) {
-            return res.status(404).json({ mensaje: "Préstamos no encontrados" });
+        if (!objeto) {
+            console.log("Objeto no encontrado con el ID proporcionado:", objectId);
+            return res.status(404).json({ mensaje: "Objeto no encontrado" });
         }
 
-        // Retornar los préstamos encontrados
-        res.json(loans);
+        if (objeto.estado !== 'Disponible') {
+            console.log("El objeto no está disponible para préstamo. Estado actual:", objeto.estado);
+            return res.status(400).json({ mensaje: "El objeto no está disponible para préstamo" });
+        }
+
+        // Fetch the user using the user ID
+        const user = await User.findById(userId);
+        console.log("Usuario encontrado:", user);  // Log the user fetched
+
+        if (!user) {
+            console.log("Usuario no encontrado con el ID proporcionado:", userId);
+            return res.status(404).json({ mensaje: "Usuario no encontrado" });
+        }
+
+        // Create a new loan
+        const newLoan = new Loan({
+            nameUser: userId,
+            nameObj: objectId,
+            returnDate: returnDate // Date format: YYYY-MM-DD
+        });
+
+        await newLoan.save();
+        console.log("Préstamo creado:", newLoan);  // Log the loan created
+
+        // Update the object's status and loanId
+        objeto.estado = 'En uso';
+        objeto.loanId = newLoan._id;
+        await objeto.save();
+
+        console.log("Objeto actualizado a 'En uso' con el ID del préstamo:", objeto);  // Log object update
+
+        res.json({ mensaje: "Préstamo creado exitosamente", loan: newLoan });
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ mensaje: "Hubo un error al buscar los préstamos" });
+        console.error("Error al crear el préstamo:", err);
+        res.status(500).json({ mensaje: "Hubo un error al crear el préstamo" });
     }
 }
 
+// Close a Loan
 async function returnObject(req, res) {
-    const { loanId, linkCloseLoan } = req.body;
-    console.log("Request body:", req.body);
+    const { loanId, observaciones } = req.body;
+
+    if (!loanId) {
+        return res.status(400).json({ mensaje: "ID del préstamo es requerido" });
+    }
 
     try {
+        // Fetch the loan by its ID
         const loan = await Loan.findById(loanId);
-        console.log("Loan found:", loan);
-
         if (!loan) {
-            await logAction({
-                user: req.user ? req.user.username : 'anonymous',
-                action: 'return',
-                element: `loan:${loanId}`,
-                date: new Date()
-            });
             return res.status(404).json({ mensaje: "Préstamo no encontrado" });
         }
 
         if (!loan.status) {
-            await logAction({
-                user: req.user ? req.user.username : 'anonymous',
-                action: 'return',
-                element: `loan:${loan._id}`,
-                date: new Date()
-            });
             return res.status(400).json({ mensaje: "El préstamo ya ha sido devuelto" });
         }
 
+        // Update loan status and add actual return date
         loan.status = false;
-        loan.returnDate = Date.now();
-        loan.linkCloseLoan = linkCloseLoan;
+        loan.actualReturnDate = Date.now();
+        loan.observaciones = observaciones || 'Sin observaciones';
         await loan.save();
-        console.log("Loan updated:", loan);
 
-        const ceiitObject = await Ceiit.findById(loan.nameObj);
-        console.log("Ceiit object found:", ceiitObject);
-
-        ceiitObject.isAvailable = true;
-        await ceiitObject.save();
-        console.log("Ceiit object updated:", ceiitObject);
-
-        await logAction({
-            user: req.user ? req.user.username : 'anonymous',
-            action: 'return',
-            element: `loan:${loan._id}`,
-            date: new Date()
-        });
+        // Find the object associated with the loan and update its status
+        const objeto = await Objeto.findById(loan.nameObj);
+        objeto.estado = 'Disponible';
+        objeto.loanId = null;
+        await objeto.save();
 
         res.json({ mensaje: "Préstamo devuelto correctamente", loan });
     } catch (err) {
@@ -86,101 +97,72 @@ async function returnObject(req, res) {
     }
 }
 
-
-async function loanObject(req, res) {
-    const { userId, ceiitId, linkOpenLoan } = req.body;
-    console.log("Request body:", req.body);
-
-    if (!userId || !ceiitId || !linkOpenLoan) {
-        return res.status(400).json({ mensaje: "Faltan datos necesarios" });
-    }
+// Get Loan by Object ID
+async function getLoanByObjectId(req, res) {
+    const { id } = req.query;
 
     try {
-        const ceiitObject = await Ceiit.findById(ceiitId);
-        console.log("Ceiit object found:", ceiitObject);
+        const loans = await Loan.find({ nameObj: id });
 
-        if (!ceiitObject || !ceiitObject.isAvailable) {
-            return res.status(400).json({ mensaje: "El objeto no está disponible" });
+        if (loans.length === 0) {
+            return res.status(404).json({ mensaje: "No se encontraron préstamos para este objeto" });
         }
 
-        const newLoan = new Loan({
-            nameUser: userId,
-            nameObj: ceiitId,
-            date: Date.now(),
-            linkOpenLoan: linkOpenLoan
-        });
-
-        await newLoan.save();
-        console.log("New loan created:", newLoan);
-
-        ceiitObject.isAvailable = false;
-        await ceiitObject.save();
-        console.log("Ceiit object updated to unavailable");
-
-        await logAction({
-            user: req.user ? req.user.username : 'anonymous',
-            action: 'create',
-            element: `loan:${newLoan._id}`,
-            date: new Date()
-        });
-
-        res.json({
-            obj: newLoan
-        });
+        res.json(loans);
     } catch (err) {
-        console.error("Error al crear el préstamo:", err);
-        res.status(500).json({ mensaje: "Hubo un error al crear el préstamo" });
+        console.log(err);
+        res.status(500).json({ mensaje: "Hubo un error al buscar los préstamos" });
     }
 }
 
+// Read Loan (Get Loan by Loan ID)
+async function loanReadObject(req, res) {
+    const { loanId } = req.body;
 
+    try {
+        const readLoan = await Loan.findOne({ _id: loanId })
+            .populate('nameUser', 'name surName')
+            .populate('nameObj', 'nombre');
+
+        if (!readLoan) {
+            return res.status(404).json({ mensaje: "No se encontró el préstamo con el ID proporcionado" });
+        }
+
+        res.json({ loan: readLoan });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ mensaje: "Hubo un error al buscar el préstamo" });
+    }
+}
+
+// Update Loan Object
 async function loanUpdateObject(req, res) {
-    const { loanId, userId, ceiitId, linkOpenLoan, linkCloseLoan } = req.body;
+    const { loanId, userId, objectId, returnDate, observaciones } = req.body;
 
     try {
         const updatedLoan = await Loan.findByIdAndUpdate(
             loanId,
             {
                 nameUser: userId,
-                nameObj: ceiitId,
-                date: Date.now(),
-                status: false,
-                linkOpenLoan,
-                linkCloseLoan
+                nameObj: objectId,
+                returnDate: returnDate, // Expected return date
+                observaciones: observaciones || 'Sin observaciones'
             },
             { new: true }
         );
 
         if (!updatedLoan) {
-            await logAction({
-                user: req.user ? req.user.username : 'anonymous',
-                action: 'update',
-                element: `loan:${loanId}`,
-                date: new Date()
-            });
             return res.status(404).json({ mensaje: "No se encontró el préstamo con el ID proporcionado" });
         }
 
-        const ceiitObject = await Ceiit.findById(ceiitId);
-        ceiitObject.isAvailable = true;
-        await ceiitObject.save();
-
-        await logAction({
-            user: req.user ? req.user.username : 'anonymous',
-            action: 'update',
-            element: `loan:${updatedLoan._id}`,
-            date: new Date()
-        });
-
-        res.json({
-            obj: updatedLoan
-        });
+        res.json({ loan: updatedLoan });
     } catch (err) {
         console.log(err);
         res.status(500).json({ mensaje: "Hubo un error al actualizar el préstamo" });
     }
 }
 
+// Delete Loan Object
 async function loanDeleteObject(req, res) {
     const { loanId } = req.body;
 
@@ -188,87 +170,26 @@ async function loanDeleteObject(req, res) {
         const loan = await Loan.findByIdAndDelete(loanId);
 
         if (!loan) {
-            await logAction({
-                user: req.user ? req.user.username : 'anonymous',
-                action: 'delete',
-                element: `loan:${loanId}`,
-                date: new Date()
-            });
             return res.status(404).json({ mensaje: "No se encontró el préstamo con el ID proporcionado" });
         }
 
-        const ceiitObject = await Ceiit.findById(loan.nameObj);
-        if (ceiitObject) {
-            ceiitObject.isAvailable = true;
-            await ceiitObject.save();
-        }
-
-        await logAction({
-            user: req.user ? req.user.username : 'anonymous',
-            action: 'delete',
-            element: `loan:${loan._id}`,
-            date: new Date()
-        });
-
-        res.json({
-            mensaje: "Préstamo eliminado correctamente"
-        });
+        res.json({ mensaje: "Préstamo eliminado correctamente" });
     } catch (err) {
         console.log(err);
-        res.status(500).json({ mensaje: "Hubo un error al borrar el préstamo" });
+        res.status(500).json({ mensaje: "Hubo un error al eliminar el préstamo" });
     }
 }
 
-
-async function loanReadObject(req, res) {
-    const { loanId } = req.body;
-
-    try {
-        const readLoan = await Loan.findOne({
-            _id: loanId
-        }).populate('nameUser', 'name surName')
-          .populate('nameObj', 'NOMBRE');
-
-        if (!readLoan) {
-            await logAction({
-                user: req.user ? req.user.username : 'anonymous',
-                action: 'read',
-                element: `loan:${loanId}`,
-                date: new Date()
-            });
-            return res.status(404).json({ mensaje: "No se encontró el préstamo con el ID proporcionado" });
-        } else {
-            await logAction({
-                user: req.user ? req.user.username : 'anonymous',
-                action: 'read',
-                element: `loan:${readLoan._id}`,
-                date: new Date()
-            });
-            res.json({
-                obj: readLoan
-            });
-        }
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ mensaje: "Hubo un error al buscar el préstamo" });
-    }
-}
-
+// Get All Loans
 async function getAllLoans(req, res) {
     try {
         const loans = await Loan.find({});
+
         if (!loans) {
             return res.status(404).json({ mensaje: "No se encontraron préstamos" });
-        } else {
-            await logAction({
-                user: req.user ? req.user.username : 'anonymous',
-                action: 'read',
-                element: 'all loans',
-                date: new Date()
-            });
-            res.json({ obj: loans });
         }
-        
+
+        res.json({ loans });
     } catch (err) {
         console.log(err);
         res.status(500).json({ mensaje: "Hubo un error al obtener los préstamos" });
@@ -277,10 +198,10 @@ async function getAllLoans(req, res) {
 
 module.exports = {
     loanObject,
-    loanUpdateObject,
     loanDeleteObject,
     loanReadObject,
+    loanUpdateObject,
     getAllLoans,
-    getLoanByObjectId,
-    returnObject
+    returnObject,
+    getLoanByObjectId
 };
